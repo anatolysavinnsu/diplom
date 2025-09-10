@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌱 PlantDiagnostic | AI диагностика болезней бобовых</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e9ecef 100%); min-height: 100vh; padding: 2rem; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .card { background: white; border-radius: 32px; box-shadow: 0 20px 40px rgba(0,0,0,0.08); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); color: white; padding: 2rem; text-align: center; }
+        .header h1 { font-size: 2.5rem; display: flex; align-items: center; justify-content: center; gap: 0.75rem; }
+        .model-badge { display: inline-block; background: rgba(255,255,255,0.2); padding: 0.25rem 1rem; border-radius: 50px; font-size: 0.85rem; margin-top: 1rem; }
+        .diseases { background: #f8f9fa; padding: 1.5rem 2rem; border-bottom: 1px solid #e9ecef; }
+        .disease-list { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+        .disease-item { display: flex; align-items: center; gap: 0.5rem; background: white; padding: 0.5rem 1rem; border-radius: 50px; font-size: 0.9rem; }
+        .disease-badge { width: 12px; height: 12px; border-radius: 50%; }
+        .badge-spot { background: #f4a261; }
+        .badge-rust { background: #e76f51; }
+        .badge-healthy { background: #2e7d32; }
+        .upload-area { margin: 1.5rem; padding: 2rem; text-align: center; border: 2px dashed #cbd5e0; border-radius: 24px; cursor: pointer; transition: all 0.2s; background: #fafcff; }
+        .upload-area:hover { border-color: #2e7d32; background: #f8fdf9; }
+        .upload-icon { font-size: 3rem; margin-bottom: 1rem; }
+        .upload-text { font-size: 1rem; color: #495057; }
+        .file-info { margin-top: 1rem; font-size: 0.85rem; color: #6c757d; }
+        input[type="file"] { display: none; }
+        button { background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); color: white; border: none; padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600; border-radius: 50px; cursor: pointer; margin-top: 1rem; }
+        button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(46,125,50,0.3); }
+        .result-section { margin: 1.5rem; padding: 1.5rem; background: white; border-radius: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .result-header { display: flex; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 2px solid #e9ecef; }
+        .diagnosis { background: #e8f5e9; padding: 1.5rem; border-radius: 20px; text-align: center; margin-bottom: 1rem; }
+        .diagnosis h2 { font-size: 1.8rem; color: #2e7d32; }
+        .confidence-badge { display: inline-block; background: white; padding: 0.5rem 1rem; border-radius: 50px; margin-top: 0.5rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #e9ecef; }
+        th { background: #f8f9fa; color: #2e7d32; }
+        .confidence-bar-container { width: 150px; background: #e9ecef; border-radius: 10px; overflow: hidden; }
+        .confidence-bar { background: linear-gradient(90deg, #2e7d32, #4caf50); height: 8px; border-radius: 10px; transition: width 0.3s; }
+        .loading { text-align: center; padding: 2rem; }
+        .spinner { width: 50px; height: 50px; border: 4px solid #e9ecef; border-top-color: #2e7d32; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .history-section { margin: 1.5rem; padding: 1.5rem; background: white; border-radius: 24px; }
+        .history-section table { width: 100%; }
+        .history-section tr:hover { background: #f8f9fa; cursor: pointer; }
+        footer { text-align: center; padding: 1.5rem; color: #6c757d; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="header">
+            <h1>🌱 PlantDiagnostic</h1>
+            <p>Искусственный интеллект для диагностики болезней бобовых растений</p>
+            <div class="model-badge">🤖 Vision Transformer (ViT) | nateraw/vit-base-beans</div>
+        </div>
+
+        <div class="diseases">
+            <h3>📋 Модель определяет:</h3>
+            <div class="disease-list">
+                <div class="disease-item"><div class="disease-badge badge-spot"></div><span>angular_leaf_spot — угловатая пятнистость</span></div>
+                <div class="disease-item"><div class="disease-badge badge-rust"></div><span>bean_rust — ржавчина</span></div>
+                <div class="disease-item"><div class="disease-badge badge-healthy"></div><span>healthy — здоровый лист</span></div>
+            </div>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📸</div>
+            <div class="upload-text">Нажмите или перетащите изображение</div>
+            <div class="upload-text" style="font-size: 0.8rem;">JPG, PNG (до 10 МБ)</div>
+            <input type="file" id="imageFile" accept="image/jpeg,image/png">
+            <div id="fileInfo"></div>
+            <button id="classifyBtn" style="display: none;">🔬 Классифицировать</button>
+        </div>
+
+        <div id="resultSection"></div>
+
+        <div class="history-section">
+            <h3>📜 История обработок</h3>
+            <div id="historyList" style="max-height: 300px; overflow-y: auto;">Загрузка истории...</div>
+        </div>
+
+        <footer>⚡ GPU-ускорение через EXLA | Распределенная система на Elixir</footer>
+    </div>
+</div>
+
+<script>
+    // DOM элементы
+    const fileInput = document.getElementById('imageFile');
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInfo = document.getElementById('fileInfo');
+    const classifyBtn = document.getElementById('classifyBtn');
+    const resultSection = document.getElementById('resultSection');
+
+    // Drag & Drop
+    uploadArea.addEventListener('click', () => fileInput.click());
+    uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#2e7d32'; });
+    uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = '#cbd5e0'; });
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect(file);
+        }
+        uploadArea.style.borderColor = '#cbd5e0';
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) handleFileSelect(e.target.files[0]);
+    });
+
+    function handleFileSelect(file) {
+        fileInfo.innerHTML = `✅ Выбран файл: ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        classifyBtn.style.display = 'inline-block';
+    }
+
+    // Кнопка "Классифицировать" не должна открывать выбор файла
+    classifyBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    function displayResult(result) {
+        if (!result) {
+            resultSection.innerHTML = '<div class="result-section">Ошибка: нет данных</div>';
+            return;
+        }
+
+        let html = '<div class="result-section">';
+        html += '<div class="result-header">';
+        html += `<span>📄 Файл: ${result.filename || 'Изображение'}</span>`;
+        html += `<span>⏱️ Время обработки: ${result.processing_time_ms || 0} мс</span>`;
+        html += '</div>';
+        html += '<div class="diagnosis">';
+        html += `<h2>🔍 Диагноз: ${result.top_label_ru || 'Неизвестно'}</h2>`;
+        html += `<div class="confidence-badge">🎯 Уверенность модели: ${result.top_confidence || 0}%</div>`;
+        html += '</div>';
+
+        if (result.predictions && result.predictions.length > 0) {
+            html += '<h3 style="margin-top:1rem;">📊 Детальные вероятности:</h3>';
+            html += '<table style="width:100%; border-collapse: collapse;">';
+            html += '<thead><tr><th>Заболевание</th><th>Вероятность</th><th>Уверенность</th></tr></thead>';
+            html += '<tbody>';
+            result.predictions.forEach(p => {
+                html += `<tr>
+            <td><strong>${p.label_ru || p.label}</strong><br><small style="color:#666;">${p.label}</small></td>
+            <td>${(p.score * 100).toFixed(2)}%</td>
+            <td>
+                <div class="confidence-bar-container">
+                    <div class="confidence-bar" style="width: ${p.confidence}%;"></div>
+                </div>
+                ${p.confidence}%
+            </td>
+        </tr>`;
+            });
+            html += '</tbody></table>';
+        }
+
+        html += '<div class="stats" style="margin-top:1rem; font-size:0.85rem; color:#718096;">';
+        html += '🤖 Модель: Vision Transformer (ViT), обученная на датасете Beans<br>';
+        html += '⚡ GPU-ускорение через EXLA | Распределённая очередь Oban';
+        html += '</div>';
+        html += '</div>';
+
+        resultSection.innerHTML = html;
+    }
+
+    function displayError(message) {
+        resultSection.innerHTML = `<div class="result-section"><div style="text-align:center; color:#c62828;"><h3>❌ Ошибка</h3><p>${message}</p></div></div>`;
+    }
+
+    function showLoading(text) {
+        resultSection.innerHTML = `<div class="result-section"><div class="loading"><div class="spinner"></div><p>${text}</p></div></div>`;
+    }
+
+    // Классификация
+    classifyBtn.onclick = async () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        showLoading('🤖 Постановка задачи в очередь...');
+
+        try {
+            const response = await fetch('/api/classify', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if (!data.success) throw new Error(data.error || 'Ошибка');
+
+            const jobId = data.job_id;
+            showLoading(`🧠 Обработка изображения... ID: ${jobId.substring(0,8)}...`);
+
+            let attempts = 0;
+            const maxAttempts = 30;
+            const pollInterval = setInterval(async () => {
+                attempts++;
+                try {
+                    const statusResponse = await fetch(`/api/status/${jobId}`);
+                    const statusData = await statusResponse.json();
+
+                    if (statusData.status === 'completed') {
+                        clearInterval(pollInterval);
+                        displayResult(statusData.result);
+                        loadHistory();
+                    } else if (statusData.status === 'error') {
+                        clearInterval(pollInterval);
+                        displayError(statusData.error || 'Ошибка обработки');
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(pollInterval);
+                        displayError('Превышено время ожидания');
+                    }
+                } catch (err) { console.error(err); }
+            }, 2000);
+        } catch (error) {
+            displayError(error.message);
+        }
+    };
+
+    // История: показываем результат без лишнего лоадера
+    window.showResult = async function(id) {
+        try {
+            const response = await fetch(`/api/status/${id}`);
+            const data = await response.json();
+            if (data.result) {
+                displayResult(data.result);
+                setTimeout(() => {
+                    resultSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            } else {
+                displayError('Результат не найден');
+            }
+        } catch (error) {
+            console.error(error);
+            displayError('Ошибка загрузки');
+        }
+    };
+
+    async function loadHistory() {
+        try {
+            const response = await fetch('/api/history');
+            const data = await response.json();
+            const historyDiv = document.getElementById('historyList');
+
+            if (data.success && data.history && data.history.length > 0) {
+                let html = '<table style="width:100%; border-collapse: collapse;">';
+                html += '<thead> <th>Изображение</th><th>Диагноз</th><th>Уверенность</th><th>Время</th><th>Дата</th> </thead>';
+                html += '<tbody>';
+                data.history.forEach(item => {
+                    const date = new Date(item.inserted_at).toLocaleString();
+                    html += `<tr onclick="window.showResult('${item.id}')" style="cursor:pointer;">`;
+                    html += `<td>${item.filename}</td>`;
+                    html += `<td><strong>${item.top_label_ru}</strong></td>`;
+                    html += `<td>${item.top_confidence}%</td>`;
+                    html += `<td>${item.processing_time_ms} мс</td>`;
+                    html += `<td>${date}</td>`;
+                    html += `</tr>`;
+                });
+                html += '</tbody></table>';
+                historyDiv.innerHTML = html;
+            } else {
+                historyDiv.innerHTML = '<div>Пока нет обработанных изображений</div>';
+            }
+        } catch (error) {
+            console.error(error);
+            document.getElementById('historyList').innerHTML = '<div>Ошибка загрузки истории</div>';
+        }
+    }
+
+    // Загрузка информации о кластере
+    async function loadClusterInfo() {
+        try {
+            const response = await fetch('/api/cluster_info');
+            const data = await response.json();
+
+            const clusterDiv = document.getElementById('clusterInfo');
+            if (data.success) {
+                let nodesHtml = '';
+                if (data.connected_nodes.length > 0) {
+                    nodesHtml = '<ul style="margin: 0; padding-left: 1rem;">';
+                    data.connected_nodes.forEach(node => {
+                        nodesHtml += `<li style="display: flex; justify-content: space-between; align-items: center; margin: 0.5rem 0;">
+                        <span>🖥️ ${node}</span>
+                        <button onclick="disconnectNode('${node}')" style="margin: 0; padding: 0.25rem 0.5rem; font-size: 0.8rem;">Отключить</button>
+                    </li>`;
+                    });
+                    nodesHtml += '</ul>';
+                } else {
+                    nodesHtml = '<p>Нет подключённых узлов</p>';
+                }
+
+                clusterDiv.innerHTML = `
+                <div style="display: grid; gap: 0.5rem;">
+                    <p><strong>🔷 Текущий узел:</strong> ${data.current_node}</p>
+                    <p><strong>🎭 Роль узла:</strong> ${data.node_role}</p>
+                    <p><strong>🎮 GPU доступен:</strong> ${data.gpu_available ? '✅ да' : '❌ нет'}</p>
+                    <p><strong>🌐 Всего узлов в кластере:</strong> ${data.cluster_size}</p>
+                    <p><strong>🔗 Подключённые узлы:</strong></p>
+                    ${nodesHtml}
+                </div>
+            `;
+            } else {
+                clusterDiv.innerHTML = '<p style="color: #c62828;">❌ Ошибка загрузки информации</p>';
+            }
+        } catch (error) {
+            console.error('Error loading cluster info:', error);
+            document.getElementById('clusterInfo').innerHTML = '<p style="color: #c62828;">❌ Ошибка: не удалось загрузить информацию</p>';
+        }
+    }
+
+    // Подключение нового узла
+    async function addNode() {
+        const nodeName = document.getElementById('nodeNameInput').value.trim();
+        if (!nodeName) {
+            alert('Введите имя узла в формате node@ip');
+            return;
+        }
+
+        const addBtn = document.querySelector('#nodeNameInput + button');
+        const originalText = addBtn.textContent;
+        addBtn.textContent = 'Подключение...';
+        addBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/add_node', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ node_name: nodeName })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert(`✅ ${data.message}`);
+                document.getElementById('nodeNameInput').value = '';
+                loadClusterInfo();
+                loadHistory();
+            } else {
+                alert(`❌ ${data.error}`);
+            }
+        } catch (error) {
+            alert(`❌ Ошибка: ${error.message}`);
+        } finally {
+            addBtn.textContent = originalText;
+            addBtn.disabled = false;
+        }
+    }
+
+    // Отключение узла
+    async function disconnectNode(nodeName) {
+        if (!confirm(`Отключить узел ${nodeName}?`)) return;
+
+        try {
+            const response = await fetch('/api/disconnect_node', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ node_name: nodeName })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert(`✅ ${data.message}`);
+                loadClusterInfo();
+            } else {
+                alert(`❌ ${data.error}`);
+            }
+        } catch (error) {
+            alert(`❌ Ошибка: ${error.message}`);
+        }
+    }
+
+    // Автообновление информации о кластере каждые 5 секунд
+    setInterval(loadClusterInfo, 5000);
+
+    // Запуск
+    loadHistory();
+    loadClusterInfo();
+</script>
+</body>
+</html>
