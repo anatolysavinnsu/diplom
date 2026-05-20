@@ -1,4 +1,5 @@
 defmodule PlantClassifier.GpuWorker do
+  @moduledoc false
   use GenServer
   require Logger
 

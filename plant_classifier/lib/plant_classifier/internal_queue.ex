@@ -1,4 +1,5 @@
 defmodule PlantClassifier.InternalQueue do
+  @moduledoc false
   use GenServer
 
   # API

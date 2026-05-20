@@ -1,4 +1,5 @@
 defmodule PlantClassifier.Vision do
+  @moduledoc false
   require Logger
 
   def start_link do

@@ -1,4 +1,5 @@
 defmodule PlantClassifierWeb.ClassifyController do
+  @moduledoc false
   use PlantClassifierWeb, :controller
   alias PlantClassifier.Repo
   alias PlantClassifier.Classification

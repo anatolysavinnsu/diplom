@@ -1,4 +1,5 @@
 defmodule PlantClassifier.InferenceWorker do
+  @moduledoc false
   use Oban.Worker, queue: :gpu
 
   alias PlantClassifier.Repo

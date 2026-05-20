@@ -7,6 +7,6 @@ defmodule PlantClassifier.ObanJobTest do
     changeset = InferenceWorker.new(%{classification_id: "test_id"}, queue: :gpu)
 
     assert Ecto.Changeset.get_field(changeset, :queue) == "gpu"
-    assert Ecto.Changeset.get_field(changeset, :args) == %{"classification_id" => "test_id"}
+    assert Ecto.Changeset.get_field(changeset, :args) == %{classification_id: "test_id"}
   end
 end

@@ -1,4 +1,5 @@
 defmodule PlantClassifierWeb.PageController do
+  @moduledoc false
   use PlantClassifierWeb, :controller
 
   def index(conn, _params) do

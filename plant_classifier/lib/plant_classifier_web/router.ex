@@ -1,4 +1,5 @@
 defmodule PlantClassifierWeb.Router do
+  @moduledoc false
   use PlantClassifierWeb, :router
 
   pipeline :browser do

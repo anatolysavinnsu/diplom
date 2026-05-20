@@ -1,4 +1,5 @@
 defmodule PlantClassifier.SaveWorker do
+  @moduledoc false
   use Oban.Worker, queue: :save
 
   alias PlantClassifier.Repo

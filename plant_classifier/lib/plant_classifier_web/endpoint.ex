@@ -1,4 +1,5 @@
 defmodule PlantClassifierWeb.Endpoint do
+  @moduledoc false
   use Phoenix.Endpoint, otp_app: :plant_classifier
 
   # Парсер для загрузки файлов

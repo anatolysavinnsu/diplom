@@ -1,4 +1,5 @@
 defmodule PlantClassifier.ModelManager do
+  @moduledoc false
   use GenServer
   require Logger
 
